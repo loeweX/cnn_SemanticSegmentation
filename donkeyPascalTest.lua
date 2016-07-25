@@ -15,7 +15,7 @@ local meanStdFile = '/data/DNN-common/Pascal2012/VOCdevkit/VOC2012/ImageSets/Seg
 if paths.filep(testImagesFile) then
   print('Loading testImage metadata from cache')
   testLoader = torch.load(testImagesFile)
-  testImages = testLoader.valImages ----------------------------------------------------------------------------------------------
+  testImages = testLoader.testImages ----------------------------------------------------------------------------------------------
 else
   print('Creating testImage metadata')
 --Load test
@@ -81,8 +81,8 @@ local function testHook(index)
   collectgarbage()
   local tmpInput = image.load(imagePath .. '/' .. testImages[index] .. '.jpg')
 
---  outImg = image.scale(tmpInput,224,224)
-  local outImg = tmpInput
+  outImg = image.scale(tmpInput,224,224)
+  --local outImg = tmpInput
   
   -- mean/std
   for i=1,3 do -- channels

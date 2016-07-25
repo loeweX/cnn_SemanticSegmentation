@@ -5,7 +5,13 @@ print '==> defining testing procedure'
 local batchNumber = 0
 paths.mkdir(opt.save .. '/finalImages')
 
-imagePath = '/data/DNN-common/Pascal2012/VOCdevkit/VOC2012/myImages'
+imagePath = '/data/DNN-common/Pascal2012/VOCdevkit/VOC2012/JPEGImages'
+
+local meanStdFile = '/data/DNN-common/Pascal2012/VOCdevkit/VOC2012/ImageSets/Segmentation/meanStd.t7'
+local meanstd = torch.load(meanStdFile)
+mean = meanstd.mean
+std = meanstd.std
+print('Loaded mean and std from cache')
 
 function test()
   model:evaluate()  
@@ -82,6 +88,7 @@ function testBatch(inputsCPU, imNames)
   for i = 1,opt.batchSize do
     output = prediction_sorted[{i,1,{},{}}]
     tmp = image.load(imagePath .. '/' .. imNames[i] .. '.jpg')  --toDo: cut image to original size
+    repl()
 
     matio.save(paths.concat(opt.save, 'finalImages/' .. imNames[i] .. '.mat'), output)   
   end

@@ -21,17 +21,17 @@ function M.parse(arg)
   cmd:option('-numClasses', 21, 'Number of Classes to be differentiated')
   cmd:option('-saveEpoch', 5, 'Number of epochs after which to save model and params') 
   cmd:option('-dataset', 'stage1', 'which dataset to train on: stage1 | stage2 | pascal')
-  cmd:option('-trainValSplit', true, 'have a true split between val and train data?')
+  cmd:option('-trainValSplit', false, 'have a true split between val and train data?')
   
 -- model:
-  cmd:option('-netType', 'noShare', 'net type to train: Deconv | FCN | Resnet | ...')
+  cmd:option('-netType', 'shortcutShare', 'net type to train: Deconv | FCN | Resnet | ...')
   cmd:option('-shareGradInput', false, 'Share gradInput tensors to reduce memory usage')
   
 --retrain model
 
   cmd:option('-retrain', 'none', 'provide path to model to retrain with')
   --cmd:option('-retrain', '/data/sloewe/results_deconv/Deconv/train8B/2Stage/model_40.t7', 'provide path to model to retrain with')
-  --cmd:option('-retrain', '/data/sloewe/train/allShare/2Stage/modelBN.t7', 'provide path to model to retrain with')
+  --cmd:option('-retrain', '/data/sloewe/train/stackShare/2Stage/model_40.t7', 'provide path to model to retrain with')
   cmd:option('-optimState', 'none', 'provide path to an optimState to reload from')
   cmd:option('-epochNumber', 1, 'Manual epoch number (useful on restarts)')
 
@@ -51,7 +51,7 @@ function M.parse(arg)
   
 -- testing?
   cmd:option('-testing', false, 'testing final precision')
-  cmd:option('-testFullSize', false, 'test on full images (true) or bounding boxes (false)')
+  cmd:option('-testFullSize', true, 'test on full images (true) or bounding boxes (false)')
   cmd:option('-numBoxes', 50, 'Number of bounding boxes to use for final testing')
 
   cmd:text()
