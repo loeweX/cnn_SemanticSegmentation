@@ -15,6 +15,7 @@ function M.parse(arg)
 
 -- global:
   cmd:option('-manualSeed', 1, 'fixed input seed for repeatable experiments')
+<<<<<<< HEAD
   cmd:option('-nDonkeys', 2, 'number of donkeys to initialize (data loading threads)')
   cmd:option('-threads', 2, 'number of threads')
   cmd:option('-targetSize', 500, 'Size of the outputs of the net: targetSize x targetSize')
@@ -22,15 +23,29 @@ function M.parse(arg)
   cmd:option('-saveEpoch', 5, 'Number of epochs after which to save model and params') 
   cmd:option('-dataset', 'pascal', 'which dataset to train on: stage1 | stage2 | pascal')
   cmd:option('-trainValSplit', false, 'have a true split between val and train data?')
+=======
+  cmd:option('-nDonkeys', 16, 'number of donkeys to initialize (data loading threads)')
+  cmd:option('-threads', 2, 'number of threads')
+  cmd:option('-targetSize', 224, 'Size of the outputs of the net: targetSize x targetSize')
+  cmd:option('-numClasses', 21, 'Number of Classes to be differentiated')
+  cmd:option('-saveEpoch', 5, 'Number of epochs after which to save model and params') 
+  cmd:option('-dataset', 'stage1', 'which dataset to train on: stage1 | stage2 | pascal')
+  cmd:option('-trainValSplit', true, 'have a true split between val and train data?')
+>>>>>>> 32440cd4b1365a95010b8ce9d85320c4a3bd4613
 
 -- model:
   cmd:option('-netType', 'stackShare', 'net type to train: Deconv | FCN | Resnet | ...')
   cmd:option('-shareGradInput', false, 'Share gradInput tensors to reduce memory usage')
   
 --retrain model
+<<<<<<< HEAD
   --cmd:option('-retrain', 'none', 'provide path to model to retrain with')
   --cmd:option('-retrain', '/data/sloewe/results_deconv/Deconv/train8B/2Stage/model_40.t7', 'provide path to model to retrain with')
   cmd:option('-retrain', '/data/sloewe/train/stackShare/2Stage/model_40.t7', 'provide path to model to retrain with')
+=======
+  cmd:option('-retrain', 'none', 'provide path to model to retrain with')
+  --cmd:option('-retrain', '/data/sloewe/results_deconv/Deconv/fullDataset8B/2Stage/modelBN.t7', 'provide path to model to retrain with')
+>>>>>>> 32440cd4b1365a95010b8ce9d85320c4a3bd4613
   cmd:option('-optimState', 'none', 'provide path to an optimState to reload from')
   cmd:option('-epochNumber', 1, 'Manual epoch number (useful on restarts)')
 
@@ -38,6 +53,7 @@ function M.parse(arg)
   cmd:option('-numEpochs', 400, 'number of epochs to be trained')
   cmd:option('-epochLength', 1000, 'Number of Batches to train every epoch')
   cmd:option('-epochLengthVal', 100, 'Number of Batches to test every epoch')
+<<<<<<< HEAD
   cmd:option('-epoch_step', 10000, 'number of epochs when to lower learningRate') 
   cmd:option('-batchSize', 2, 'mini-batch size')
   cmd:option('-fullBatchDiv', 1, 'train full batch (=1) or devided in x parts')
@@ -45,6 +61,15 @@ function M.parse(arg)
 
 -- optimization options
   cmd:option('-learningRate', 0.0001, 'learning rate at t=0') --start with 0.01
+=======
+  cmd:option('-epoch_step', 9000, 'number of epochs when to lower learningRate') 
+  cmd:option('-batchSize', 64, 'mini-batch size')
+  cmd:option('-fullBatchDiv', 8, 'train full batch (=1) or devided in x parts')
+  cmd:option('-batchDifVal', 8, 'size reduction for validation')
+
+-- optimization options
+  cmd:option('-learningRate', 0.01, 'learning rate at t=0') --start with 0.01
+>>>>>>> 32440cd4b1365a95010b8ce9d85320c4a3bd4613
   cmd:option('-weightDecay', 0.0005, 'weight decay')
   cmd:option('-momentum', 0.9, 'momentum')
   

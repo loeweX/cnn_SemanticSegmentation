@@ -4,8 +4,13 @@ no shared weights in shortcut-connection
 ]]--
 
 local Convolution = cudnn.SpatialConvolution  --LOCAL!
+<<<<<<< HEAD
 local ReLU = nn.ReLU
 local SBatchNorm = nn.SpatialBatchNormalization
+=======
+local ReLU = cudnn.ReLU
+local SBatchNorm = cudnn.SpatialBatchNormalization
+>>>>>>> 32440cd4b1365a95010b8ce9d85320c4a3bd4613
 local FullConvolution = cudnn.SpatialFullConvolution
 
 local depth = 50 --opt.depth or 50
@@ -159,4 +164,8 @@ local function BNInit(name)
 end
 
 ConvInit('cudnn.SpatialFullConvolution')
+<<<<<<< HEAD
 BNInit('nn.SpatialBatchNormalization')
+=======
+BNInit('cudnn.SpatialBatchNormalization')
+>>>>>>> 32440cd4b1365a95010b8ce9d85320c4a3bd4613
