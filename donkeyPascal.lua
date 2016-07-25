@@ -117,7 +117,7 @@ local function trainHook(index)
   local outImg = tmpInput
   local outLab = tmpLabel
 
- --[[ tmpInput = image.scale(tmpInput,250,250) --different size to have more space for random crops??
+  tmpInput = image.scale(tmpInput,250,250) --different size to have more space for random crops??
   tmpLabel = image.scale(tmpLabel,250,250,'simple')
 
   local iW = tmpInput:size(3)
@@ -134,7 +134,7 @@ local function trainHook(index)
   assert(outImg:size(3) == oW)
   assert(outImg:size(2) == oH)
   assert(outLab:size(3) == oW)
-  assert(outLab:size(2) == oH) ]]--
+  assert(outLab:size(2) == oH)
   
 
   -- do hflip with probability 0.5
@@ -182,8 +182,8 @@ local function valHook(index)
   local outImg = tmpInput
   local outLab = tmpLabel
 
---  outImg = image.scale(tmpInput,224,224) --different size to have more space for random crops??
---  outLab = image.scale(tmpLabel,224,224,'simple')
+  outImg = image.scale(tmpInput,opt.targetSize,opt.targetSize) --different size to have more space for random crops??
+  outLab = image.scale(tmpLabel,opt.targetSize,opt.targetSize,'simple')
 
   -- mean/std
   for i=1,3 do -- channels

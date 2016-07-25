@@ -7,7 +7,7 @@ require 'optim'
 
 ---------------------------------------------------------------------------------
 
-modelpath = '/data/sloewe/train/stackShare/2Stage/'
+modelpath = '/data/sloewe/train/allShare/2Stage/'
 model = 'model_40.t7'
 
 epochL = 2000
@@ -32,7 +32,7 @@ cutorch.setDevice(opt.defGPU)
 
 model = torch.load(modelpath .. model)
 
-opt.batchSize = 8
+opt.batchSize = 28
 
 
 function train()

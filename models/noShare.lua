@@ -159,4 +159,4 @@ local function BNInit(name)
 end
 
 ConvInit('cudnn.SpatialFullConvolution')
---BNInit('nn.SpatialBatchNormalization')
+BNInit('nn.SpatialBatchNormalization')
