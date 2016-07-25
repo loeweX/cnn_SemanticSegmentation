@@ -6,13 +6,10 @@ require 'xlua'
 require 'optim'
 
 ---------------------------------------------------------------------------------
-<<<<<<< HEAD
+
 modelpath = '/data/sloewe/train/stackShare/2Stage/'
 model = 'model_40.t7'
-=======
-modelpath = '/data/sloewe/train/ReverseBN/2Stage/'
-model = 'model_70.t7'
->>>>>>> 32440cd4b1365a95010b8ce9d85320c4a3bd4613
+
 epochL = 2000
 name = 'nn.SpatialBatchNormalization'
 ---------------------------------------------------------------------------------
