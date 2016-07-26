@@ -72,7 +72,8 @@ local function bottleneck(n, stride)
     origLayer = model:get(layerNum):get(1):get(1):get(1):get(4)
     tmpLayer = tmpLayer:cuda()
     origLayer = origLayer:cuda()
-    tmpLayer:share(origLayer,'weight','bias','gradWeight','gradBias')
+    --tmpLayer:share(origLayer,'weight','bias','gradWeight','gradBias')
+    tmpLayer:share(origLayer,'weight','gradWeight')
    -- layerNum = layerNum - 1
   end
 
