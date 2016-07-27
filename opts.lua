@@ -20,18 +20,17 @@ function M.parse(arg)
   cmd:option('-targetSize', 224, 'Size of the outputs of the net: targetSize x targetSize')
   cmd:option('-numClasses', 21, 'Number of Classes to be differentiated')
   cmd:option('-saveEpoch', 5, 'Number of epochs after which to save model and params') 
-  cmd:option('-dataset', 'stage1', 'which dataset to train on: stage1 | stage2 | pascal')
+  cmd:option('-dataset', 'stage2', 'which dataset to train on: stage1 | stage2 | pascal')
   cmd:option('-trainValSplit', true, 'have a true split between val and train data?')
   
 -- model:
-  cmd:option('-netType', 'shortDeconv', 'net type to train: Deconv | FCN | Resnet | ...')
+  cmd:option('-netType', 'Deconv', 'net type to train: Deconv | FCN | Resnet | ...')
   cmd:option('-shareGradInput', false, 'Share gradInput tensors to reduce memory usage')
   
 --retrain model
-
-  cmd:option('-retrain', 'none', 'provide path to model to retrain with')
-  --cmd:option('-retrain', '/data/sloewe/results_deconv/Deconv/train8B/2Stage/model_40.t7', 'provide path to model to retrain with')
-  --cmd:option('-retrain', '/data/sloewe/train/noShare/1Stage/model_20.t7', 'provide path to model to retrain with')
+  --cmd:option('-retrain', 'none', 'provide path to model to retrain with')
+  cmd:option('-retrain', '/data/sloewe/results_deconv/Deconv/fullDataset8B/2Stage/modelBN.t7', 'provide path to model to retrain with')
+  --cmd:option('-retrain', '/data/sloewe/train/noShare/1StageSplit/model_20.t7', 'provide path to model to retrain with')
   cmd:option('-optimState', 'none', 'provide path to an optimState to reload from')
   cmd:option('-epochNumber', 1, 'Manual epoch number (useful on restarts)')
 
@@ -40,7 +39,7 @@ function M.parse(arg)
   cmd:option('-epochLength', 1000, 'Number of Batches to train every epoch')
   cmd:option('-epochLengthVal', 100, 'Number of Batches to test every epoch')
   cmd:option('-epoch_step', 10000, 'number of epochs when to lower learningRate') 
-  cmd:option('-batchSize', 64, 'mini-batch size')
+  cmd:option('-batchSize', 8, 'mini-batch size')
   cmd:option('-fullBatchDiv', 8, 'train full batch (=1) or devided in x parts')
   cmd:option('-batchDifVal', 8, 'size reduction for validation')
 
@@ -50,7 +49,7 @@ function M.parse(arg)
   cmd:option('-momentum', 0.9, 'momentum')
   
 -- testing?
-  cmd:option('-testing', false, 'testing final precision')
+  cmd:option('-testing', true, 'testing final precision')
   cmd:option('-testFullSize', true, 'test on full images (true) or bounding boxes (false)')
   cmd:option('-numBoxes', 50, 'Number of bounding boxes to use for final testing')
 

@@ -21,22 +21,22 @@ local function shortcut(nInputPlane, nOutputPlane, stride, adj)
     -- 1x1 convolution
     tmpLayer = FullConvolution(nInputPlane, nOutputPlane, 1, 1, stride, stride, 0, 0, adj, adj)
 
-    if layerNum >= 6 and stride == 2 then
+  --[[  if layerNum >= 6 and stride == 2 then
       origLayer = model:get(layerNum):get(1):get(1):get(2):get(1)
       tmpLayer = tmpLayer:cuda()
       origLayer = origLayer:cuda()
       tmpLayer:share(origLayer,'weight','gradWeight')
       layerNum = layerNum - 1
-    end
+    end ]]--
 
 --[[    tmpLayer.bias[{{1,-1}}]  = 0
     tmpLayer.gradBias[{{1,-1}}]  = 0
     origLayer.bias[{{1,-1}}]  = 0
     origLayer.gradBias[{{1,-1}}]  = 0  ]]--
-    
-    return nn.Sequential()
-    :add(tmpLayer)
-    :add(SBatchNorm(nOutputPlane))
+
+  return nn.Sequential()
+  :add(tmpLayer)
+  :add(SBatchNorm(nOutputPlane))
 else
   return nn.Identity()
 end
@@ -68,22 +68,22 @@ local function bottleneck(n, stride)
   s:add(FullConvolution(n,nOutputPlane,1,1,1,1,0,0))
   s:add(SBatchNorm(nOutputPlane))
 
-  if layerNum >= 6 and stride == 2 then
+--[[  if layerNum >= 6 and stride == 2 then
     origLayer = model:get(layerNum):get(1):get(1):get(1):get(4)
     tmpLayer = tmpLayer:cuda()
     origLayer = origLayer:cuda()
     --tmpLayer:share(origLayer,'weight','bias','gradWeight','gradBias')
     tmpLayer:share(origLayer,'weight','gradWeight')
    -- layerNum = layerNum - 1
-  end
+  end ]]--
 
-  return nn.Sequential()
-  :add(nn.ConcatTable()
-    :add(s)
-    :add(shortcut(nInputPlane, nOutputPlane, stride, adj)))
-  :add(nn.CAddTable(true))
-  -- :add(SBatchNorm(nOutputPlane))
-  :add(ReLU(true))
+return nn.Sequential()
+:add(nn.ConcatTable()
+  :add(s)
+  :add(shortcut(nInputPlane, nOutputPlane, stride, adj)))
+:add(nn.CAddTable(true))
+-- :add(SBatchNorm(nOutputPlane))
+:add(ReLU(true))
 end
 
 -- Creates count residual blocks with specified number of features
@@ -146,7 +146,7 @@ model:add(FullConvolution(64, 21, 7, 7, 2, 2, 3, 3, 1, 1))
 
 local function ConvInit(name)
   for k,v in pairs(model:findModules(name)) do
-   -- local n = v.kW*v.kH*v.nOutputPlane
+    -- local n = v.kW*v.kH*v.nOutputPlane
     v.weight:normal(0,0.01)
     v.bias:zero()
 --    v.gradBias = nil
@@ -156,10 +156,28 @@ local function BNInit(name)
   for k,v in pairs(model:findModules(name)) do
     v.weight:fill(1)
     v.bias:fill(0.001)
-   -- v.momentum = 1
+    -- v.momentum = 1
   end
 end
 
 ConvInit('cudnn.SpatialFullConvolution')
 BNInit('nn.SpatialBatchNormalization')
 
+----------------------------------------------------------------------------------
+--initializing shared layers with weight from convolutional layers
+
+s = {[6]=11, [7]=10, [8]=9}
+
+for layerNum = 6,8 do
+  origLayer = model:get(layerNum):get(1):get(1):get(2):get(1)
+  tmpLayer = model:get(s[layerNum]):get(t[layerNum]):get(1):get(2):get(1)
+  tmpLayer = tmpLayer:cuda()
+  origLayer = origLayer:cuda()
+  tmpLayer:share(origLayer,'weight','gradWeight')
+
+  origLayer = model:get(layerNum):get(1):get(1):get(1):get(4)
+  tmpLayer = model:get(s[layerNum]):get(t[layerNum]):get(1):get(1):get(4)
+  tmpLayer = tmpLayer:cuda()
+  origLayer = origLayer:cuda()
+  tmpLayer:share(origLayer,'weight','gradWeight')  
+end

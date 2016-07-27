@@ -87,10 +87,13 @@ function testBatch(inputsCPU, imNames)
 
   for i = 1,opt.batchSize do
     output = prediction_sorted[{i,1,{},{}}]
-    tmp = image.load(imagePath .. '/' .. imNames[i] .. '.jpg')  --toDo: cut image to original size
-    repl()
+    img = image.load(imagePath .. '/' .. imNames[i] .. '.jpg')  --toDo: cut image to original size
 
-    matio.save(paths.concat(opt.save, 'finalImages/' .. imNames[i] .. '.mat'), output)   
+    tmpOut = image.scale(output, 500,500, 'simple')
+    
+    finalOut = tmpOut[{{torch.floor((500-img:size(2))/2) + 1, 500 - torch.ceil((500-img:size(2))/2)}, {torch.floor((500-img:size(3))/2) + 1, 500 - torch.ceil((500-img:size(3))/2)}}]
+
+    matio.save(paths.concat(opt.save, 'finalImages/' .. imNames[i] .. '.mat'), finalOut)   
   end
 
   if batchNumber == 1 then
