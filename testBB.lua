@@ -71,11 +71,15 @@ function testBatch(inputsCPU, imNames, boxesCPU, boxSizes)
     local padded_output = torch.zeros(opt.numClasses,inputsCPU[inpC]:size(2) + 2 * inputsCPU[inpC]:size(3),inputsCPU[inpC]:size(3) + 2 * inputsCPU[inpC]:size(2))
     padded_output[1] = 0.00001
     
+    local input = torch.CudaTensor(opt.batchSize,3,224,224)
+    for i = 2, opt.batchSize do
+      input[i] = boxesCPU[inpC][i]
+    end
+    
     for boxC = 1, #boxesCPU[inpC] do
       local box_wd = boxSizes[inpC][boxC][3]-boxSizes[inpC][boxC][1]+1;
       local box_ht = boxSizes[inpC][boxC][4]-boxSizes[inpC][boxC][2]+1;
       assert(box_wd == box_ht)
-      local input = torch.CudaTensor(1,3,224,224)
       input[1] = boxesCPU[inpC][boxC]
       local outputs = model:forward(input)
       local tmpOutput = outputs[1]
