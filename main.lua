@@ -47,7 +47,7 @@ if opt.testing then
   if opt.testFullSize then
     dofile 'test.lua'
   else
-    dofile 'testBB.lua'
+    dofile 'testBB_fast.lua'
   end  
   test()
 else

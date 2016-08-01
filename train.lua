@@ -156,6 +156,7 @@ function trainBatch(inputsCPU, labelsCPU)
       finish = opt.batchSize/ opt.fullBatchDiv 
       for i = 1, opt.fullBatchDiv do     
         local out = model:forward(inputs[{{start, finish},{},{},{}}])
+        local out = model:forward(inputs[{{start, finish},{},{},{}}])
         outputs[{{start, finish},{},{},{}}] = out:float()
         tmpErr = criterion:forward(out, labels[{{start, finish},{},{}}])
         

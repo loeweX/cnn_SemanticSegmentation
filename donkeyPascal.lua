@@ -109,51 +109,52 @@ local function trainHook(index)
 
   assert(tmpInput:size(3) == tmpLabel:size(3))
   assert(tmpInput:size(2) == tmpLabel:size(2))
-  
+
   tmpLabel = tmpLabel * 255
   tmpLabel = tmpLabel + 1
   tmpLabel[tmpLabel:gt(opt.numClasses+1)] = opt.numClasses + 1
 
   local outImg = tmpInput
   local outLab = tmpLabel
-
-  tmpInput = image.scale(tmpInput,250,250) --different size to have more space for random crops??
-  tmpLabel = image.scale(tmpLabel,250,250,'simple')
-
-  local iW = tmpInput:size(3)
-  local iH = tmpInput:size(2)
-
-  -- do random crop
-  local oW = opt.targetSize
-  local oH = opt.targetSize
-  local h1 = math.ceil(torch.uniform(1e-2, iH-oH))
-  local w1 = math.ceil(torch.uniform(1e-2, iW-oW))
-  local outImg = image.crop(tmpInput, w1, h1, w1 + oW, h1 + oH)
-  local outLab = image.crop(tmpLabel, w1, h1, w1 + oW, h1 + oH)
-
-  assert(outImg:size(3) == oW)
-  assert(outImg:size(2) == oH)
-  assert(outLab:size(3) == oW)
-  assert(outLab:size(2) == oH)
   
+  if opt.targetSize < tmpInput:size(2) then
+    tmpInput = image.scale(tmpInput,250,250) --different size to have more space for random crops??
+    tmpLabel = image.scale(tmpLabel,250,250,'simple')
 
-  -- do hflip with probability 0.5
-  if torch.uniform() > 0.5 then 
-    outImg = image.hflip(outImg) 
-    outLab = image.hflip(outLab) 
+    local iW = tmpInput:size(3)
+    local iH = tmpInput:size(2)
+
+    -- do random crop
+    local oW = opt.targetSize
+    local oH = opt.targetSize
+    local h1 = math.ceil(torch.uniform(1e-2, iH-oH))
+    local w1 = math.ceil(torch.uniform(1e-2, iW-oW))
+    outImg = image.crop(tmpInput, w1, h1, w1 + oW, h1 + oH)
+    outLab = image.crop(tmpLabel, w1, h1, w1 + oW, h1 + oH)
+  
+    assert(outImg:size(3) == oW)
+    assert(outImg:size(2) == oH)
+    assert(outLab:size(3) == oW)
+    assert(outLab:size(2) == oH)
+  end  
+
+-- do hflip with probability 0.5
+if torch.uniform() > 0.5 then 
+  outImg = image.hflip(outImg) 
+  outLab = image.hflip(outLab) 
+end
+-- mean/std
+for i=1,3 do -- channels
+  if mean then outImg[{{i},{},{}}]:add(-mean[i]) 
+  else error('no mean given')
   end
-  -- mean/std
-  for i=1,3 do -- channels
-    if mean then outImg[{{i},{},{}}]:add(-mean[i]) 
-    else error('no mean given')
-    end
-    --  if std then outImg[{{i},{},{}}]:div(std[i]) 
-    --  else error('no std given')
-    --  end
-  end
-  outImg = outImg:index(1,torch.LongTensor{3,2,1}) --rgb to bgr
-  outImg = outImg * 255
-  return outImg, outLab
+  --  if std then outImg[{{i},{},{}}]:div(std[i]) 
+  --  else error('no std given')
+  --  end
+end
+outImg = outImg:index(1,torch.LongTensor{3,2,1}) --rgb to bgr
+outImg = outImg * 255
+return outImg, outLab
 end
 
 function loadTrainBatch(indices)
@@ -203,7 +204,7 @@ function loadValBatch(indices)
   if opt.fullBatchDiv ~= 'none' then
     opt.batchSize = opt.batchSize / opt.batchDifVal
   end
-  
+
   inputs = torch.Tensor(opt.batchSize,3,opt.targetSize,opt.targetSize)
   labels = torch.Tensor(opt.batchSize,opt.targetSize,opt.targetSize)
   imNames = {}

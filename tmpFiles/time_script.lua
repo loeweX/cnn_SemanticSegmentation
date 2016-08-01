@@ -2,10 +2,10 @@ require 'nn'
 require 'cudnn'
 require 'cunn'
 
-model = torch.load('myModel.t7')
+model = torch.load('model_40.t7')
 model:cuda()
 
-input = torch.CudaTensor(1,3,224,224)
+input = torch.CudaTensor(8,3,224,224)
 
 t = 0
 for i = 1,1000 do
@@ -18,3 +18,6 @@ print(t/1000)
 
 -- server:  0.031574970722198
 -- pc:      0.10423856210709
+
+--8batch
+--DeconvNet - 
