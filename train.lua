@@ -15,16 +15,10 @@ optimState = {
   dampening = 0.0
 }
 
-if opt.optimState ~= 'none' then
-  assert(paths.filep(opt.optimState), 'File not found: ' .. opt.optimState)
-  print('Loading optimState from file: ' .. opt.optimState)
-  optimState = torch.load(opt.optimState)
-end
-
 optimMethod = optim.sgd
 
 ----------------------------------------------------------------------
-----------------------------------------------------------------------
+
 print '==> defining training procedure'
 
 local batchNumber = 0
@@ -95,7 +89,6 @@ function train()
     else
       torch.save(paths.concat(opt.save, 'model_' .. epoch .. '.t7'), model)
     end
-    torch.save(paths.concat(opt.save, 'optimState_' .. epoch .. '.t7'), optimState)
   end
 end
 
@@ -105,13 +98,6 @@ local inputs = torch.CudaTensor()
 local labels = torch.CudaTensor()
 
 local timer = torch.Timer()
-local dataTimer = torch.Timer()
-
-
---errLogger = optim.Logger(paths.concat(opt.save, 'err.log'))
---errLogger:setNames{'err'}
---errLogger.showPlot = true
-
 local tmp = 0
 
 local parameters, gradParameters = model:getParameters()
@@ -127,9 +113,6 @@ function trainBatch(inputsCPU, labelsCPU)
   optimState.learningRate = opt.learningRate * math.pow(0.1, iter_count / opt.epoch_step)
   
   -- transfer over to GPU
-  -- inputs = inputsCPU:cuda()
-  -- labels = labelsCPU:cuda()
-
   inputs = inputs or (opt.nGPU == 1 and torch.CudaTensor() or cutorch.createCudaHostTensor())
   labels = labels or torch.CudaTensor()
 
@@ -155,7 +138,6 @@ function trainBatch(inputsCPU, labelsCPU)
       start = 1
       finish = opt.batchSize/ opt.fullBatchDiv 
       for i = 1, opt.fullBatchDiv do     
-        local out = model:forward(inputs[{{start, finish},{},{},{}}])
         local out = model:forward(inputs[{{start, finish},{},{},{}}])
         outputs[{{start, finish},{},{},{}}] = out:float()
         tmpErr = criterion:forward(out, labels[{{start, finish},{},{}}])
@@ -221,9 +203,6 @@ function trainBatch(inputsCPU, labelsCPU)
       img = inputsCPU[i]:index(1,torch.LongTensor{3,2,1})
       img = img / 255
       for i=1,3 do -- channels
-        --  if std then img[{{i},{},{}}]:mul(std[i]) 
-        --  else error('no std given')
-        --  end
         if mean then img[{{i},{},{}}]:add(mean[i]) 
         else error('no mean given')
         end 
@@ -233,5 +212,4 @@ function trainBatch(inputsCPU, labelsCPU)
     tmpStr = 'trEpoch' .. epoch
     saveImages(img, prediction_sorted[{imgCount,1,{},{}}], labels[imgCount], correct[imgCount], tmpStr, 1)  
   end
-  dataTimer:reset()
 end

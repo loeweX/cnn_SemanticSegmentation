@@ -2,22 +2,31 @@
 -- It is run by each data-loader thread.
 ------------------------------------------
 
+--[[
+Loading dataset for training
+
+requirements:
+- square input images with corresponding label images (where each pixel value corresponds to the label at that position)
+- txt file with all image names (train.txt, val.txt)
+  one row for each image/label pair, seperated by space
+
+- change paths according to your dataset (dataPath, imagePath, meanStdFile)
+- check if all transformations in trainHook/valHool work with your dataset (especially the label transformations - all label values have to be >= 1)
+]]--
+
 require 'image'
 require 'xlua'
 
-dataPath = '/data/DNN-common/DeconvPascal2012/imagesets/stage_1_train_imgset' --Stage 1 Training
+-- provide correct paths
+local dataPath = '/data/DNN-common/DeconvPascal2012/imagesets/stage_1_train_imgset' --Stage 1 Training
+local imagePath = '/data/DNN-common/DeconvPascal2012/VOC2012'
 
-imagePath = '/data/DNN-common/DeconvPascal2012/VOC2012'
+-- if not provided, will create meanStd file on the first run
+local meanStdFile = '/data/DNN-common/Pascal2012/VOCdevkit/VOC2012/ImageSets/Segmentation/meanStd.t7'
 
 -- a cache file of the training metadata (if doesnt exist, will be created)
-if opt.trainValSplit then
-  trainImagesFile = paths.concat(dataPath, 'trainImages.t7')
-else
-  trainImagesFile = paths.concat(dataPath, 'trainValImages.t7')
-end
-
-local valImagesFile = paths.concat(dataPath, 'valImages2.t7')
-local meanStdFile = '/data/DNN-common/Pascal2012/VOCdevkit/VOC2012/ImageSets/Segmentation/meanStd.t7'
+local trainImagesFile = paths.concat(dataPath, 'trainImages.t7')
+local valImagesFile = paths.concat(dataPath, 'valImages.t7')
 
 trainImages = {}
 trainLabels = {}
@@ -25,31 +34,25 @@ trainLabels = {}
 if paths.filep(trainImagesFile) then
   print('Loading trainImage metadata from cache')
   trainLoader = torch.load(trainImagesFile)
- --[[ for i = 1,20 do
-      trainImages[i] = trainLoader.trainImages[i]
-      trainLabels[i] = trainLoader.trainLabels[i]
-  end]]--
   trainImages = trainLoader.trainImages
   trainLabels = trainLoader.trainLabels
 else
-print('Creating trainImage metadata')
---Load Train
-trainFile = assert(io.open(paths.concat(dataPath, "train.txt")))
-counter = 1
-trainImages = {}
-trainLabels = {}
+  print('Creating trainImage metadata')
+  trainFile = assert(io.open(paths.concat(dataPath, "train.txt")))
+  counter = 1
+  trainImages = {}
+  trainLabels = {}
 
-for line in trainFile:lines() do
-  trainImages[counter], trainLabels[counter] = unpack(line:split(" "))
-  -- if counter == 5 then break end  --to load only small subset of images
-  counter = counter + 1
-end
-trainFile:close()
+  for line in trainFile:lines() do
+    trainImages[counter], trainLabels[counter] = unpack(line:split(" "))
+    counter = counter + 1
+  end
+  trainFile:close()
 
-local trainLoader = {}
-trainLoader.trainImages = trainImages
-trainLoader.trainLabels = trainLabels
-torch.save(trainImagesFile, trainLoader)
+  local trainLoader = {}
+  trainLoader.trainImages = trainImages
+  trainLoader.trainLabels = trainLabels
+  torch.save(trainImagesFile, trainLoader)
 end
 
 
@@ -60,7 +63,6 @@ if paths.filep(valImagesFile) then
   valLabels = valLoader.valLabels
 else
   print('Creating valImage metadata')
---Load val
   valFile = assert(io.open(paths.concat(dataPath, "val.txt")))
   counter = 1
   valImages = {}
@@ -68,7 +70,6 @@ else
 
   for line in valFile:lines() do
     valImages[counter], valLabels[counter] = unpack(line:split(" "))
-    -- if counter == 5 then break end  --to load only small subset of images
     counter = counter + 1
   end
   valFile:close()
@@ -207,7 +208,7 @@ local function valHook(index)
   
   tmpInput = tmpInput:index(1,torch.LongTensor{3,2,1}) --rgb to bgr
   tmpInput = tmpInput * 255
-
+  
   return tmpInput, tmpLabel, valImages[index]
 end
 

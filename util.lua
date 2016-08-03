@@ -5,37 +5,6 @@ function makeDataParallel(model, nGPU)
     model = model:get(1)
   end
 
-  -- This is useful for fitting a big net on 4 GPUs, but requires that all
-  -- containers override backwards to call backwards recursively on submodules
-  if opt.shareGradInput then
-    local function sharingKey(m)
-      local key = torch.type(m)
-      if m.__shareGradInputKey then
-        key = key .. ':' .. m.__shareGradInputKey
-      end
-      return key
-    end
-
-    -- Share gradInput for memory efficient backprop
-    local cache = {}
-    model:apply(function(m)
-        local moduleType = torch.type(m)
-        if torch.isTensor(m.gradInput) and moduleType ~= 'nn.ConcatTable' then
-          local key = sharingKey(m)
-          if cache[key] == nil then
-            cache[key] = torch.CudaStorage(1)
-          end
-          m.gradInput = torch.CudaTensor(cache[key], 1, 0)
-        end
-      end)
-    for i, m in ipairs(model:findModules('nn.ConcatTable')) do
-      if cache[i % 2] == nil then
-        cache[i % 2] = torch.CudaStorage(1)
-      end
-      m.gradInput = torch.CudaTensor(cache[i % 2], 1, 0)
-    end
-  end 
-
   -- Wrap the model with DataParallelTable, if using more than one GPU
   if opt.nGPU > 1 then
     local gpus = torch.range(1, opt.nGPU):totable()
@@ -52,7 +21,7 @@ function makeDataParallel(model, nGPU)
     model = dpt:cuda()
   end
 
-  cutorch.setDevice(opt.defGPU)
+  cutorch.setDevice(1)
 
   return model
 end

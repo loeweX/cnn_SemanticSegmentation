@@ -19,36 +19,11 @@ do -- start K datathreads (donkeys)
         local seed = opt.manualSeed + idx
         torch.manualSeed(seed)
         print(string.format('Starting donkey with id: %d seed: %d', tid, seed))
-
-        if opt.testing then
-          if opt.testFullSize then
-            paths.dofile('donkeyPascalTest.lua')
-          else
-            paths.dofile('donkeyBB.lua')
-          end  
-        elseif opt.dataset == 'pascal' then
-          paths.dofile('donkeyPascal.lua')
-        elseif opt.dataset == 'stage1' then
-          paths.dofile('donkeyStage1.lua')
-        elseif opt.dataset == 'stage2' then
-          paths.dofile('donkeyStage2.lua')
-        end
+        paths.dofile('donkey' .. opt.dataset .. '.lua') --Stage1, Stage2, Pascal, BB, PascalTest
       end
     );
   else -- single threaded data loading. useful for debugging
-    if opt.testing then
-      if opt.testFullSize then
-        paths.dofile('donkeyPascalTest.lua')
-      else
-        paths.dofile('donkeyBB.lua')
-      end
-    elseif opt.dataset == 'pascal' then
-      paths.dofile('donkeyPascal.lua')
-    elseif opt.dataset == 'stage1' then
-      paths.dofile('donkeyStage1.lua')
-    elseif opt.dataset == 'stage2' then
-      paths.dofile('donkeyStage2.lua')
-    end
+    paths.dofile('donkey' .. opt.dataset .. '.lua') --Stage1, Stage2, Pascal, BB, PascalTest
     donkeys = {}
     function donkeys:addjob(f1, f2) f2(f1()) end
     function donkeys:synchronize() end

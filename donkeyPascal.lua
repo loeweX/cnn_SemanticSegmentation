@@ -12,7 +12,7 @@ labelPath = '/data/DNN-common/Pascal2012/VOCdevkit/VOC2012/mySegmentationClass'
 -- a cache file of the training metadata (if doesnt exist, will be created)
 local trainImagesFile = paths.concat(dataPath, 'trainImages.t7')  --trainVAL...
 local valImagesFile = paths.concat(dataPath, 'valImages.t7')
-local meanStdFile = '/data/DNN-common/Pascal2012/VOCdevkit/VOC2012/ImageSets/Segmentation/meanStd.t7'
+local meanStdFile = '/data/DNN-common/Pascal2012/VOCdevkit/VOC2012/ImageSets/batchSizeVal/meanStd.t7'
 
 if paths.filep(trainImagesFile) then
   print('Loading trainImage metadata from cache')
@@ -201,20 +201,12 @@ local function valHook(index)
 end
 
 function loadValBatch(indices)
-  if opt.fullBatchDiv ~= 'none' then
-    opt.batchSize = opt.batchSize / opt.batchDifVal
-  end
-
-  inputs = torch.Tensor(opt.batchSize,3,opt.targetSize,opt.targetSize)
-  labels = torch.Tensor(opt.batchSize,opt.targetSize,opt.targetSize)
+  inputs = torch.Tensor(opt.batchSizeVal,3,opt.targetSize,opt.targetSize)
+  labels = torch.Tensor(opt.batchSizeVal,opt.targetSize,opt.targetSize)
   imNames = {}
 
-  for i = 1,opt.batchSize do
+  for i = 1,opt.batchSizeVal do
     inputs[i], labels[i], imNames[i] = valHook(indices[i])
-  end
-
-  if opt.fullBatchDiv ~= 'none' then
-    opt.batchSize = opt.batchSize * opt.batchDifVal
   end
 
   return inputs, labels, imNames

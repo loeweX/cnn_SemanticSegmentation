@@ -20,12 +20,7 @@ function val()
 
   local tic = torch.tic()
 
-  if opt.fullBatchDiv ~= 'none' then
-    opt.batchSize = opt.batchSize / opt.batchDifVal
-    print('BatchSize for validation: ' .. opt.batchSize)
-  end
-
-  indices = torch.randperm(numValImages):long():split(opt.batchSize)
+  indices = torch.randperm(numValImages):long():split(opt.batchSizeVal)
   -- remove last element so that all the batches have equal size
   indices[#indices] = nil
 
@@ -93,10 +88,6 @@ function val()
 
   writeReport(single_accuracy)
 
-  if opt.fullBatchDiv ~= 'none' then
-    opt.batchSize = opt.batchSize * opt.batchDifVal
-  end
-
   collectgarbage()
 end
 
@@ -138,7 +129,7 @@ function valBatch(inputsCPU, labelsCPU, imNames)
 
   batchNumber = batchNumber + 1
   loss_epoch = loss_epoch + err
-  correct = torch.ones(opt.batchSize, opt.targetSize, opt.targetSize)
+  correct = torch.ones(opt.batchSizeVal, opt.targetSize, opt.targetSize)
   outLabel = opt.numClasses + 1
   -- confcounts = torch.zeros(outLabel,outLabel)
   --do
@@ -147,7 +138,7 @@ function valBatch(inputsCPU, labelsCPU, imNames)
   tmpOut = prediction_sorted[{{},1,{},{}}]:float()
   tmpLab = labels:float()
   tmpLab = tmpLab:float()
-  correct = torch.zeros(opt.batchSize, opt.targetSize,opt.targetSize) + opt.numClasses + 1
+  correct = torch.zeros(opt.batchSizeVal, opt.targetSize,opt.targetSize) + opt.numClasses + 1
 
   assert(prediction_sorted:size(3) == tmpLab:size(2) and prediction_sorted:size(4) == tmpLab:size(3))
   tmpOut = tmpOut:long()
@@ -170,7 +161,7 @@ function valBatch(inputsCPU, labelsCPU, imNames)
     locsIrrelevant = tmpLab:eq(opt.numClasses + 1)
     correct:maskedFill(locsIrrelevant,1)
 
-    imgCount = opt.batchSize < 16 and opt.batchSize or 16 -- for pretty printing
+    imgCount = opt.batchSizeVal < 16 and opt.batchSizeVal or 16 -- for pretty printing
     for i = 1,imgCount do
       --calculate back to original image (bgr->bgr and mean/std calculation)
       img = inputsCPU[i]:index(1,torch.LongTensor{3,2,1})

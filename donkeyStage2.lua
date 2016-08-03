@@ -197,15 +197,15 @@ local function trainHook(index)
 
   -----------------------------------------------------------------------------
 
-  tmpInput = image.scale(tmpInput,250,250)
-  tmpLabel = image.scale(tmpLabel,250,250,'simple')
+  tmpInput = image.scale(tmpInput,opt.targetSize+25,opt.targetSize+25)
+  tmpLabel = image.scale(tmpLabel,opt.targetSize+25,opt.targetSize+25,'simple')
 
   local iW = tmpInput:size(3)
   local iH = tmpInput:size(2)
 
   -- do random crop
-  local oW = 224
-  local oH = 224
+  local oW = opt.targetSize
+  local oH = opt.targetSize
   local h1 = math.ceil(torch.uniform(1e-2, iH-oH))
   local w1 = math.ceil(torch.uniform(1e-2, iW-oW))
   local outImg = image.crop(tmpInput, w1, h1, w1 + oW, h1 + oH)
@@ -236,7 +236,7 @@ local function trainHook(index)
 end
 
 function loadTrainBatch(indices)
-  inputs = torch.Tensor(opt.batchSize,3,224,224)
+  inputs = torch.Tensor(opt.batchSize,3,opt.targetSize,opt.targetSize)
   labels = torch.Tensor(opt.batchSize,opt.targetSize,opt.targetSize)
 
   for i = 1,opt.batchSize do
@@ -285,8 +285,8 @@ local function valHook(index)
   tmpLabel = image.crop(tmpLabel, x1, y1, x2, y2)
   
 ---------------------------------------------------
-  tmpInput = image.scale(tmpInput,224,224)
-  tmpLabel = image.scale(tmpLabel,224,224,'simple')
+  tmpInput = image.scale(tmpInput,opt.targetSize,opt.targetSize)
+  tmpLabel = image.scale(tmpLabel,opt.targetSize,opt.targetSize,'simple')
 
   -- mean/std
   for i=1,3 do -- channels
@@ -303,18 +303,13 @@ local function valHook(index)
 end
 
 function loadValBatch(indices)
-  if opt.fullBatchDiv ~= 'none' then
-    opt.batchSize = opt.batchSize / opt.batchDifVal
-  end
-  inputs = torch.Tensor(opt.batchSize,3,224,224)
-  labels = torch.Tensor(opt.batchSize,opt.targetSize,opt.targetSize)
+  inputs = torch.Tensor(opt.batchSizeVal,3,opt.targetSize,opt.targetSize)
+  labels = torch.Tensor(opt.batchSizeVal,opt.targetSize,opt.targetSize)
   imNames = {}
 
-  for i = 1,opt.batchSize do
+  for i = 1,opt.batchSizeVal do
     inputs[i], labels[i], imNames[i] = valHook(indices[i])
   end
-  if opt.fullBatchDiv ~= 'none' then
-    opt.batchSize = opt.batchSize * opt.batchDifVal
-  end
+
   return inputs, labels, imNames
 end

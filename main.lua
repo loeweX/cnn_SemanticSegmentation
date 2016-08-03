@@ -1,3 +1,9 @@
+--[[
+how to use for training:
+- adjust opts.lua to your needs
+- write a donkey to load your data (look at donkeyTemplate for help)
+]]--
+
 require 'torch'
 require 'paths'
 require 'xlua'
@@ -7,8 +13,6 @@ require 'xlua'
 require 'image'
 
 color = require 'trepl.colorize'
-
-
 torch.setdefaulttensortype('torch.FloatTensor')
 
 ----------------------------------------------------------------------
@@ -30,7 +34,7 @@ cudnn.fastest = true
 torch.setnumthreads(opt.threads)
 torch.manualSeed(opt.manualSeed)
 
-cutorch.setDevice(opt.defGPU)
+cutorch.setDevice(1)
 
 ----------------------------------------------------------------------
 print '==> executing all'
@@ -53,7 +57,7 @@ if opt.testing then
 else
   dofile 'train.lua'
   dofile 'val.lua'
-  epoch = opt.epochNumber
+  epoch = 1
 
   tmp = torch.zeros(opt.numClasses)
   for i = 1,opt.numClasses do
