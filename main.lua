@@ -4,6 +4,7 @@ how to use for training:
 - write a donkey to load your data (look at donkeyTemplate for help)
 ]]--
 
+--load required packages
 require 'torch'
 require 'paths'
 require 'xlua'
@@ -26,9 +27,9 @@ require 'cunn'
 require 'cudnn'
 require 'cutorch'
 
-assert(cutorch.getDeviceCount() == opt.nGPU, 'Make GPUs invisible! - export CUDA_VISIBLE_DEVICES=0,1')
+assert(cutorch.getDeviceCount() == opt.nGPU, 'Make GPUs invisible! - export CUDA_VISIBLE_DEVICES=0,1') --save GPU space for others 
 
-cudnn.benchmark = true
+cudnn.benchmark = true --increase speed on GPU
 cudnn.fastest = true
 
 torch.setnumthreads(opt.threads)
@@ -59,6 +60,7 @@ else
   dofile 'val.lua'
   epoch = 1
 
+  -- write an empty report at the start of the training for early sanity checks
   tmp = torch.zeros(opt.numClasses)
   for i = 1,opt.numClasses do
     tmp[i] = 0

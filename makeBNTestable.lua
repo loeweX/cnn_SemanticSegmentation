@@ -1,3 +1,8 @@
+--[[
+Independent programm that adjusts the batch normalization layers for the final testing.
+Not really necessary, results using the moving average are not worse.
+]]--
+
 require 'nn'
 require 'cudnn'
 require 'cunn'

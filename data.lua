@@ -3,7 +3,7 @@ local threads = require 'threads'
 threads.serialization('threads.sharedserialize')
 
 -- This script contains the logic to create K threads for parallel data-loading.
--- For the data-loading details, look at donkey.lua
+-- For the data-loading details, look at donkey*.lua
 -------------------------------------------------------------------------------
 do -- start K datathreads (donkeys)
   if opt.nDonkeys > 0 then
@@ -30,8 +30,7 @@ do -- start K datathreads (donkeys)
   end
 end
 
-
-
+-- get the total number of train/val/test images
 if opt.testing then
   donkeys:addjob(function() return #testImages end, function(c) numTestImages = c end)
   donkeys:synchronize()
@@ -48,3 +47,9 @@ else
   assert(numValImages, "Failed to get numValImages")
   print('Number of validation images: ' .. numValImages)
 end
+
+-- load the file that contains the mean (and std) values for the dataset
+local meanStdFile = opt.meanFilePath
+local meanstd = torch.load(meanStdFile)
+mean = meanstd.mean
+print('Loaded mean and std from cache')

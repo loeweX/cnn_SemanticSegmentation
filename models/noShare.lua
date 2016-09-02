@@ -1,6 +1,6 @@
 --[[
 Reverses the order of BatchNormalization in the original net and uses same order for mirrored side
-no shared weights in shortcut-connection
+no shared weights
 ]]--
 
 local Convolution = cudnn.SpatialConvolution  --LOCAL!
@@ -20,19 +20,6 @@ local function shortcut(nInputPlane, nOutputPlane, stride, adj)
     -- 1x1 convolution
     tmpLayer = FullConvolution(nInputPlane, nOutputPlane, 1, 1, stride, stride, 0, 0, adj, adj)
 
-  --[[  if layerNum >= 6 and stride == 2 then
-      origLayer = model:get(layerNum):get(1):get(1):get(2):get(1)
-      tmpLayer = tmpLayer:cuda()
-      origLayer = origLayer:cuda()
-      tmpLayer:share(origLayer,'weight','gradWeight')
-      layerNum = layerNum - 1
-    end ]]--
-
---[[    tmpLayer.bias[{{1,-1}}]  = 0
-    tmpLayer.gradBias[{{1,-1}}]  = 0
-    origLayer.bias[{{1,-1}}]  = 0
-    origLayer.gradBias[{{1,-1}}]  = 0  ]]--
-    
     return nn.Sequential()
     :add(tmpLayer)
     :add(SBatchNorm(nOutputPlane))
@@ -41,7 +28,7 @@ else
 end
 end
 
--- The bottleneck residual layer for 50, 101, and 152 layer networks
+-- The bottleneck residual layer 
 local function bottleneck(n, stride)
   local nInputPlane = n * 4
   if stride == 2 then
@@ -66,14 +53,6 @@ local function bottleneck(n, stride)
   s:add(ReLU(true))
   s:add(FullConvolution(n,nOutputPlane,1,1,1,1,0,0))
   s:add(SBatchNorm(nOutputPlane))
-
- --[[ if layerNum >= 6 and stride == 2 then
-    origLayer = model:get(layerNum):get(1):get(1):get(1):get(4)
-    tmpLayer = tmpLayer:cuda()
-    origLayer = origLayer:cuda()
-    tmpLayer:share(origLayer,'weight','bias','gradWeight','gradBias')
-   -- layerNum = layerNum - 1
-  end ]]--
 
   return nn.Sequential()
   :add(nn.ConcatTable()
@@ -103,7 +82,7 @@ assert(cfg[depth], 'Invalid depth: ' .. tostring(depth))
 local def, nFeatures, block = table.unpack(cfg[depth])
 print(' | ResNet-' .. depth .. ' ImageNet')
 
-model = torch.load('models/resnet-50.t7')
+model = torch.load('models/resnet-50.t7')  -- from: https://d2j0dndfm35trm.cloudfront.net/resnet-50.t7 (https://github.com/facebook/fb.resnet.torch/tree/master/pretrained)
 
 model:remove()
 model:remove()

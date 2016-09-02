@@ -3,7 +3,7 @@ local matio = require 'matio'
 
 print '==> defining testing procedure'
 
-local meanStdFile = '/data/DNN-common/Pascal2012/VOCdevkit/VOC2012/ImageSets/Segmentation/meanStd.t7'
+local meanStdFile = opt.meanFilePath
 local meanstd = torch.load(meanStdFile)
 mean = meanstd.mean
 std = meanstd.std
@@ -17,14 +17,9 @@ function test()
   model:evaluate()  
 
   batchNumber = 0
-
   local tic = torch.tic()
 
   indices = torch.randperm(numTestImages):long():split(opt.batchSize)
-  -- remove last element so that all the batches have equal size
-  --indices[#indices] = nil
-
- -- assert(numTestImages % opt.batchSize == 0, 'Batchsize must fit overall test image number')
 
   print('testing: ')
 
@@ -32,17 +27,13 @@ function test()
 
   cutorch.synchronize()
   for t,v in ipairs(indices) do
-    -- queue jobs to data-workers
     donkeys:addjob(
-      -- the job callback (runs in data-worker thread)
       function() --load single batches
         inputs, imNames, boxImgs, boxSizes = loadTestBatch(v)
         return inputs, imNames, boxImgs, boxSizes
       end,
-      -- the end callback (runs in the main thread)
       testBatch
     )
-   -- xlua.progress(t, epochL)
   end
 
   donkeys:synchronize()
@@ -57,7 +48,7 @@ function test()
 end
 
 
--- GPU inputs (preallocate)
+-- preallocate GPU inputs
 local boxes = torch.CudaTensor()
 
 function testBatch(inputsCPU, imNames, boxesCPU, boxSizes)
@@ -67,13 +58,14 @@ function testBatch(inputsCPU, imNames, boxesCPU, boxSizes)
   timer:reset()
   final_out = {}
 
+  -- very slow implementation that sends every bounding box image seperately to the network (faster implementation in testBB_fast.lua, but not fully tested)
   for inpC = 1, #inputsCPU do
     local padded_output = torch.zeros(opt.numClasses,inputsCPU[inpC]:size(2) + 2 * inputsCPU[inpC]:size(3),inputsCPU[inpC]:size(3) + 2 * inputsCPU[inpC]:size(2))
     padded_output[1] = 0.00001
     
-    local input = torch.CudaTensor(opt.batchSize,3,224,224)
+    local input = torch.CudaTensor(opt.batchSize,3,opt.targetSize,opt.targetSize)
     for i = 2, opt.batchSize do
-      input[i] = boxesCPU[inpC][i]
+      input[i] = boxesCPU[inpC][i] -- fill the input batch with other examples so that the batch normalization can work
     end
     
     for boxC = 1, #boxesCPU[inpC] do
@@ -97,15 +89,6 @@ function testBatch(inputsCPU, imNames, boxesCPU, boxSizes)
     local y = inputsCPU[inpC]:size(2)
     local final_score = padded_output[{{},{x,x+y-1},{y,x+y-1}}]
     
-    --get full size result, take only values > 0 , and multiply elementwise with this result
-    --[[
-    zero_mask = zeros(size(fcn_score));
-    fcn_score = max(zero_mask,fcn_score);
-        
-    ens_score = deconv_score .* fcn_score;
-    [ens_segscore, ens_segmask] = max(ens_score, [], 3); -- hier: 1.dimension!
-    ens_segmask = uint8(ens_segmask-1); ]]--
-
     local _,prediction_sorted = final_score:float():sort(1, true)
     prediction_sorted = prediction_sorted:float()
 
@@ -117,21 +100,20 @@ function testBatch(inputsCPU, imNames, boxesCPU, boxSizes)
   batchNumber = batchNumber + 1
 
   for i = 1,#inputsCPU do
-    matio.save(paths.concat(opt.save, 'finalImages/' .. imNames[i] .. '.mat'), final_out[i])   
+	-- save results as mat files, so that they can be loaded in MATLAB and saved using the correct format and colormap for final testing on evaluation server
+    matio.save(paths.concat(opt.save, 'finalImages/' .. imNames[i] .. '.mat'), final_out[i])    
   end
 
   print(('[%d/%d]\tTime(s) %.3f s \t Net: %s'):format(
       batchNumber, math.floor(numTestImages/opt.batchSize), timer:time().real, opt.netType))
 
+  -- save some examples for the report.html
   if batchNumber == 1 then
     imgCount = #inputsCPU < 16 and #inputsCPU or 16
     for i = 1,imgCount do
       img = inputsCPU[i]:index(1,torch.LongTensor{3,2,1})
       img = img / 255
       for i=1,3 do -- channels
-   --     if std then img[{{i},{},{}}]:mul(std[i]) 
-   --     else error('no std given')
-   --     end
         if mean then img[{{i},{},{}}]:add(mean[i]) 
         else error('no mean given')
         end

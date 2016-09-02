@@ -1,3 +1,8 @@
+--[[
+Faster reimplementation of testBB.lua that sends several bounding box instances through the network at once.
+Should work, but final results were not tested yet
+]]--
+
 require 'xlua'
 local matio = require 'matio'
 

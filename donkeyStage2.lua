@@ -1,7 +1,3 @@
--- This file contains the data-loading logic and details.
--- It is run by each data-loader thread.
-------------------------------------------
-
 require 'image'
 require 'xlua'
 
@@ -23,43 +19,39 @@ trainLabels = {}
 if paths.filep(trainImagesFile) then
   print('Loading trainImage metadata from cache')
   trainLoader = torch.load(trainImagesFile)
-  --[[  for i = 1,10 do
-      trainImages[i] = trainLoader.trainImages[i]
-      trainLabels[i] = trainLoader.trainLabels[i]
-  end ]]--
-trainImages = trainLoader.trainImages
-trainLabels = trainLoader.trainLabels
-cropX1 = trainLoader.cropX1
-cropY1 = trainLoader.cropY1
-cropX2 = trainLoader.cropX2
-cropY2 = trainLoader.cropY2
+  trainImages = trainLoader.trainImages
+  trainLabels = trainLoader.trainLabels
+  cropX1 = trainLoader.cropX1
+  cropY1 = trainLoader.cropY1
+  cropX2 = trainLoader.cropX2
+  cropY2 = trainLoader.cropY2
 else
-print('Creating trainImage metadata')
---Load Train
-trainFile = assert(io.open(paths.concat(dataPath, "train.txt")))
-counter = 1
-trainImages = {}
-trainLabels = {}
-cropX1 = {}
-cropY1 = {}
-cropX2 = {}
-cropY2 = {}
+  print('Creating trainImage metadata')
+  --Load Train
+  trainFile = assert(io.open(paths.concat(dataPath, "train.txt")))
+  counter = 1
+  trainImages = {}
+  trainLabels = {}
+  cropX1 = {}
+  cropY1 = {}
+  cropX2 = {}
+  cropY2 = {}
 
-for line in trainFile:lines() do
-  trainImages[counter], trainLabels[counter], cropX1[counter], cropY1[counter], cropX2[counter], cropY2[counter] = unpack(line:split(" "))
-  -- if counter == 5 then break end  --to load only small subset of images
-  counter = counter + 1
-end
-trainFile:close()
+  for line in trainFile:lines() do
+    trainImages[counter], trainLabels[counter], cropX1[counter], cropY1[counter], cropX2[counter], cropY2[counter] = unpack(line:split(" "))
+    -- if counter == 5 then break end  --to load only small subset of images
+    counter = counter + 1
+  end
+  trainFile:close()
 
-trainLoader = {}
-trainLoader.trainImages = trainImages
-trainLoader.trainLabels = trainLabels
-trainLoader.cropX1 = cropX1
-trainLoader.cropY1 = cropY1
-trainLoader.cropX2 = cropX2
-trainLoader.cropY2 = cropY2
-torch.save(trainImagesFile, trainLoader)
+  trainLoader = {}
+  trainLoader.trainImages = trainImages
+  trainLoader.trainLabels = trainLabels
+  trainLoader.cropX1 = cropX1
+  trainLoader.cropY1 = cropY1
+  trainLoader.cropX2 = cropX2
+  trainLoader.cropY2 = cropY2
+  torch.save(trainImagesFile, trainLoader)
 end
 
 
@@ -101,42 +93,11 @@ else
   torch.save(valImagesFile, valLoader)
 end
 
+local meanstd = torch.load(meanStdFile)
+mean = meanstd.mean
+std = meanstd.std
+print('Loaded mean and std from cache')
 
-
-if paths.filep(meanStdFile) then
-  local meanstd = torch.load(meanStdFile)
-  mean = meanstd.mean
-  std = meanstd.std
-  print('Loaded mean and std from cache')
-else
-  local tm = torch.Timer()  
-  splitSize = 10000  
-
-  print('Estimating the mean (per-channel, shared for all pixels) over ' .. splitSize .. ' randomly sampled training images')
-
-  trainSplit = torch.Tensor(splitSize,3,250,250)
-  for i = 1,splitSize do  --estimate mean and std on a subset of the dataset
-    tmp = image.load(paths.concat(imagePath, string.sub(trainImages[i],2,-1)))
-    tmp = image.scale(tmp, 250,250,'simple')
-    trainSplit[i] = tmp
-    xlua.progress(i, splitSize)
-  end
-
-  channels = {'r','g','b'}
-  image_mean = {}
-  image_std = {}
-  for i,channel in ipairs(channels) do
-    -- normalize each channel globally:
-    image_mean[i] = trainSplit[{ {},i,{},{} }]:mean()
-    image_std[i] = trainSplit[{ {},i,{},{} }]:std()
-  end
-
-  local cache = {}
-  cache.mean = image_mean
-  cache.std = image_std
-  torch.save(meanStdFile, cache)
-  print('Time to estimate:', tm:time().real)
-end
 
 collectgarbage()
 
@@ -170,7 +131,8 @@ local function trainHook(index)
   tmpLabel[tmpLabel:gt(opt.numClasses+1)] = opt.numClasses + 1
 
   -----------------------------------------------------------------------------
-
+  -- crop the image using the given values (cropX...)
+  
   pad_X1 = math.max(0, -cropX1[index])
   pad_Y1 = math.max(0, -cropY1[index])
 
@@ -224,9 +186,6 @@ local function trainHook(index)
     if mean then outImg[{{i},{},{}}]:add(-mean[i]) 
     else error('no mean given')
     end
---    if std then outImg[{{i},{},{}}]:div(std[i]) 
---    else error('no std given')
---    end
   end
 
   outImg = outImg:index(1,torch.LongTensor{3,2,1}) --rgb to bgr
@@ -293,9 +252,6 @@ local function valHook(index)
     if mean then tmpInput[{{i},{},{}}]:add(-mean[i]) 
     else error('no mean given')
     end
---    if std then tmpInput[{{i},{},{}}]:div(std[i]) 
---   else error('no std given')
---    end
   end
   tmpInput = tmpInput:index(1,torch.LongTensor{3,2,1}) --rgb to bgr
   tmpInput = tmpInput * 255

@@ -130,11 +130,13 @@ local function trainHook(index)
   assert(tmpInput:size(3) == tmpLabel:size(3))
   assert(tmpInput:size(2) == tmpLabel:size(2))
 
-  -- labels must be values >= 1
+  -- labels must be integer values >= 1
   tmpLabel = tmpLabel * 255
   tmpLabel = tmpLabel + 1
-  tmpLabel[tmpLabel:gt(opt.numClasses+1)] = opt.numClasses + 1  -- opt.numClasses + 1 label will not be learned (void   label)
+  -- opt.numClasses + 1 label will not be learned and does not contribute to error calculation (void label)
+  tmpLabel[tmpLabel:gt(opt.numClasses+1)] = opt.numClasses + 1
 
+  -- scale input to be slightly bigger than wanted and then do a random crop
   tmpInput = image.scale(tmpInput,opt.targetSize+25,opt.targetSize+25)
   tmpLabel = image.scale(tmpLabel,opt.targetSize+25,opt.targetSize+25,'simple')
 
@@ -166,7 +168,7 @@ local function trainHook(index)
   end
 
   outImg = outImg:index(1,torch.LongTensor{3,2,1}) --rgb to bgr
-  outImg = outImg * 255  -- (0,1) to (0,255)
+  outImg = outImg * 255  -- [0,1] to [0,255]
 
   return outImg, outLab
 end

@@ -1,3 +1,7 @@
+--[[
+Independent program that loads pretrained caffe-model and saves it as a torch-model (*.t7)
+]]--
+
 require 'loadcaffe'
 require 'cudnn'
 require 'nn'

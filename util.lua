@@ -1,5 +1,6 @@
 local ffi=require 'ffi'
 
+-- function to enable training on multiple GPUs
 function makeDataParallel(model, nGPU)
   if torch.type(model) == 'nn.DataParallelTable' then
     model = model:get(1)
@@ -26,7 +27,7 @@ function makeDataParallel(model, nGPU)
   return model
 end
 
-
+-- little helper functions
 local function dimnarrow(x,sz,pad,dim)
   local xn = x
   for i=1,x:dim() do

@@ -1,7 +1,3 @@
--- This file contains the data-loading logic and details.
--- It is run by each data-loader thread.
-------------------------------------------
-
 require 'image'
 require 'xlua'
 
@@ -12,7 +8,7 @@ labelPath = '/data/DNN-common/Pascal2012/VOCdevkit/VOC2012/mySegmentationClass'
 -- a cache file of the training metadata (if doesnt exist, will be created)
 local trainImagesFile = paths.concat(dataPath, 'trainImages.t7')  --trainVAL...
 local valImagesFile = paths.concat(dataPath, 'valImages.t7')
-local meanStdFile = '/data/DNN-common/Pascal2012/VOCdevkit/VOC2012/ImageSets/batchSizeVal/meanStd.t7'
+local meanStdFile = '/data/DNN-common/Pascal2012/VOCdevkit/VOC2012/ImageSets/batchSizeVal/meanStd.t7' -- opt.meanFilePath
 
 if paths.filep(trainImagesFile) then
   print('Loading trainImage metadata from cache')

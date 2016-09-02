@@ -1,11 +1,9 @@
-require 'optim'   -- an optimization package, for online and batch methods
-require 'image'
-
 --[[  Write a html-file with all relevant logging information
-To use add something like this to your script: 
 
-  val_acc = acc_epoch
-  val_loss = loss_epoch
+To use add this to your validation script: 
+--------------------------------------------------------
+  val_acc = acc_epoch -- accuracy value for this epoch
+  val_loss = loss_epoch  -- loss value for this epoch
   
   accLogger:add{train_acc, val_acc}
   accLogger:style{'-','-'}
@@ -16,12 +14,14 @@ To use add something like this to your script:
   lossLogger:plot()
 
   writeReport()
+---------------------------------
+And save the training accuracy in train_acc and the training loss in train_loss.  
   
 This updates the current accuracy and loss.
 the Log also saves input and output images of the net with their corresponding label, you have to save them in your program to show them in the report
 To save Images do:
-
-  if batchNumber == 1 then
+-------------------------------------------------
+  if batchNumber == 1 then -- save only examples for the first batch of each epoch
     correct = torch.zeros(opt.batchSize, opt.targetSize, opt.targetSize) + opt.numClasses + 1
     correct = correct:float()
     _,prediction_sorted = outputs:float():sort(2, true) -- descending
@@ -39,9 +39,12 @@ To save Images do:
       saveImages(inputs[1], prediction_sorted[{1,1,{},{}}], labels[1], correct[1], tmpStr, 1)  
     end
   end
-  
+ ---------------------------------------
+'outputs' should contain the output of your network for 'inputs' 
 ]]--
 
+
+-- initialize loggers
 accLogger = optim.Logger(paths.concat(opt.save, 'acc.log'))
 accLogger:setNames{'% mean accuracy (train set)', '% mean accuracy (val set)'}
 accLogger.showPlot = false
@@ -58,14 +61,17 @@ val_loss = 0
 local acc_dir = paths.concat(opt.save, 'acc.png')
 local loss_dir = paths.concat(opt.save, 'loss.png')      
 
+-- class labels for the Pascal VOC segmentation dataset
 classes = { '0=background' , '1=aeroplane', '2=bicycle', '3=bird', '4=boat', '5=bottle', '6=bus','7=car', '8=cat', '9=chair', '10=cow', '11=diningtable', '12=dog', '13=horse',   '14=motorbike', '15=person', '16=potted plant', '17=sheep', '18=sofa', '19=train',        
   '20=tv/monitor'} 
 
 function writeReport(valAccuracy)
 
+  -- convert plots to png files to be able to show them in the html file
   os.execute(('convert -density 200 %s/acc.log.eps %s/acc.png'):format(opt.save,opt.save))
   os.execute(('convert -density 200 %s/loss.log.eps %s/loss.png'):format(opt.save,opt.save))
 
+  -- write everything to report.html
   local file = io.open(opt.save..'/report.html','w')
   file:write(([[
       <!DOCTYPE html>
@@ -292,9 +298,8 @@ function saveImagesTest(input, output, count)
   image.save(paths.concat(opt.save, 'images/outputImg' .. count .. '.png'), output)   
 end
 
-
+-- creates a small html file to show the first 16 test images with their results
 function writeReportTest()
-
   local file = io.open(opt.save..'/report.html','w')
   file:write(([[
       <!DOCTYPE html>
@@ -319,7 +324,10 @@ function writeReportTest()
   end
 end
 
---------------------------------------------------------------
+--------------------------------------------------------------------------------
+-- creates a html file that shows all test images with their results.
+-- independent of the other parts of the programm!
+-- first run the MATLAB programm myFinalTestImages.m to get the final resulting png files
 function writeFinalReportTest()
 --  dataPath = '/data/DNN-common/Pascal2012/VOCdevkit/VOC2012/ImageSets/Segmentation'
   dataPath = '/data/DNN-common/DeconvPascal2012/VOC2012_TEST/ImageSets/Segmentation'

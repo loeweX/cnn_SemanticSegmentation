@@ -1,10 +1,11 @@
 --[[
 Reverses the order of BatchNormalization in the original net and uses same order for mirrored side
-no shared weights in shortcut-connection
 ]]--
-local Convolution = cudnn.SpatialConvolution  
+
+local Convolution = cudnn.SpatialConvolution  --LOCAL!
 local ReLU = nn.ReLU
 local SBatchNorm = nn.SpatialBatchNormalization
+
 local FullConvolution = cudnn.SpatialFullConvolution
 
 local depth = 50 --opt.depth or 50
@@ -17,22 +18,16 @@ local function shortcut(nInputPlane, nOutputPlane, stride, adj)
   (shortcutType == 'B' and nInputPlane ~= nOutputPlane)
   if useConv then
     -- 1x1 convolution
-    return nn.Sequential()
-    :add(FullConvolution(nInputPlane, nOutputPlane, 1, 1, stride, stride, 0, 0, adj, adj))
-    :add(SBatchNorm(nOutputPlane))
-    --[[ elseif nInputPlane ~= nOutputPlane then
-    -- Strided, zero-padded identity shortcut
-    return nn.Sequential()
-    :add(nn.SpatialAveragePooling(1, 1, stride, stride))
-    :add(nn.Concat(2)
-      :add(nn.Identity())
-      :add(nn.MulConstant(0))) ]]--
+    tmpLayer = FullConvolution(nInputPlane, nOutputPlane, 1, 1, stride, stride, 0, 0, adj, adj)
+  return nn.Sequential()
+  :add(tmpLayer)
+  :add(SBatchNorm(nOutputPlane))
 else
   return nn.Identity()
 end
 end
 
--- The bottleneck residual layer for 50, 101, and 152 layer networks
+-- The bottleneck residual layer
 local function bottleneck(n, stride)
   local nInputPlane = n * 4
   if stride == 2 then
@@ -58,21 +53,13 @@ local function bottleneck(n, stride)
   s:add(FullConvolution(n,nOutputPlane,1,1,1,1,0,0))
   s:add(SBatchNorm(nOutputPlane))
 
-  if layerNum >= 6 and stride == 2 then
-    origLayer = model:get(layerNum):get(1):get(1):get(1):get(4)
-    tmpLayer = tmpLayer:cuda()
-    origLayer = origLayer:cuda()
-    tmpLayer:share(origLayer,'weight','bias','gradWeight','gradBias')
-    layerNum = layerNum - 1
-  end
-
-  return nn.Sequential()
-  :add(nn.ConcatTable()
-    :add(s)
-    :add(shortcut(nInputPlane, nOutputPlane, stride, adj)))
-  :add(nn.CAddTable(true))
-  -- :add(SBatchNorm(nOutputPlane))
-  :add(ReLU(true))
+return nn.Sequential()
+:add(nn.ConcatTable()
+  :add(s)
+  :add(shortcut(nInputPlane, nOutputPlane, stride, adj)))
+:add(nn.CAddTable(true))
+-- :add(SBatchNorm(nOutputPlane))
+:add(ReLU(true))
 end
 
 -- Creates count residual blocks with specified number of features
@@ -94,7 +81,7 @@ assert(cfg[depth], 'Invalid depth: ' .. tostring(depth))
 local def, nFeatures, block = table.unpack(cfg[depth])
 print(' | ResNet-' .. depth .. ' ImageNet')
 
-model = torch.load('models/resnet-50.t7')
+model = torch.load('models/resnet-50.t7') -- from: https://d2j0dndfm35trm.cloudfront.net/resnet-50.t7 (https://github.com/facebook/fb.resnet.torch/tree/master/pretrained)
 
 model:remove()
 model:remove()
@@ -118,11 +105,11 @@ for i = 5,8 do
   outputSize = outputSize * 2
 end
 
-
 model:add(layer(block, 512, def[1], 2)) --fullconv 5
 model:add(layer(block, 256, def[2], 2)) --fullconv 4
 model:add(layer(block, 128, def[3], 2)) --fullconv 3
 model:add(layer(block, 64, def[4], 2)) --fullconv 2
+
 
 model:remove(4)
 pool1 = nn.SpatialMaxPooling(2,2,2,2)
@@ -130,14 +117,11 @@ model:insert(pool1,4)
 
 model:add(nn.SpatialMaxUnpooling(pool1))
 
---model:add(Convolution(64, 21, 7, 7, 2, 2, 3, 3))
-
 model:add(FullConvolution(64, 21, 7, 7, 2, 2, 3, 3, 1, 1))
-
 
 local function ConvInit(name)
   for k,v in pairs(model:findModules(name)) do
-   -- local n = v.kW*v.kH*v.nOutputPlane
+    -- local n = v.kW*v.kH*v.nOutputPlane
     v.weight:normal(0,0.01)
     v.bias:zero()
 --    v.gradBias = nil
@@ -147,7 +131,7 @@ local function BNInit(name)
   for k,v in pairs(model:findModules(name)) do
     v.weight:fill(1)
     v.bias:fill(0.001)
-   -- v.momentum = 1
+    -- v.momentum = 1
   end
 end
 
@@ -155,4 +139,24 @@ ConvInit('cudnn.SpatialFullConvolution')
 BNInit('nn.SpatialBatchNormalization')
 
 
---model:get(1).gradInput = nil
+if opt.sharedWeights then
+
+----------------------------------------------------------------------------------
+--initializing shared layers with weight from convolutional layers
+
+ s = {[6]=11, [7]=10, [8]=9}
+
+  for layerNum = 6,8 do
+    origLayer = model:get(layerNum):get(1):get(1):get(2):get(1)
+    tmpLayer = model:get(s[layerNum]):get(t[layerNum]):get(1):get(2):get(1)
+    tmpLayer = tmpLayer:cuda()
+    origLayer = origLayer:cuda()
+    tmpLayer:share(origLayer,'weight','gradWeight')
+
+    origLayer = model:get(layerNum):get(1):get(1):get(1):get(4)
+    tmpLayer = model:get(s[layerNum]):get(t[layerNum]):get(1):get(1):get(4)
+    tmpLayer = tmpLayer:cuda()
+    origLayer = origLayer:cuda()
+    tmpLayer:share(origLayer,'weight','gradWeight')  
+  end
+end

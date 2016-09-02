@@ -10,7 +10,7 @@ imagePath = '/data/DNN-common/Pascal2012/VOCdevkit/VOC2012/myImages'
 
 -- a cache file of the training metadata (if doesnt exist, will be created)
 local testImagesFile = paths.concat(dataPath, 'testImages.t7') ------------------------------------------------------------------------------------
-local meanStdFile = '/data/DNN-common/Pascal2012/VOCdevkit/VOC2012/ImageSets/Segmentation/meanStd.t7'
+local meanStdFile = '/data/DNN-common/Pascal2012/VOCdevkit/VOC2012/ImageSets/Segmentation/meanStd.t7' -- opt.meanFilePath
 
 if paths.filep(testImagesFile) then
   print('Loading testImage metadata from cache')

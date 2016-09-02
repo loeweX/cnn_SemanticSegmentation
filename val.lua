@@ -4,16 +4,10 @@ local batchNumber = 0
 local loss_epoch = 0
 local confcounts = torch.zeros(opt.numClasses+1,opt.numClasses+1)
 
-local meanStdFile = '/data/DNN-common/Pascal2012/VOCdevkit/VOC2012/ImageSets/Segmentation/meanStd.t7'
-local meanstd = torch.load(meanStdFile)
-mean = meanstd.mean
-std = meanstd.std
-print('Loaded mean and std from cache')
-
-
 function val()
   model:evaluate()  
 
+  -- initiliaze some values for this epoch
   batchNumber = 0
   loss_epoch = 0
   confcounts = torch.zeros(opt.numClasses+1,opt.numClasses+1)
@@ -26,6 +20,7 @@ function val()
 
   print('validating: ')
 
+  -- determine epoch length
   if #indices < opt.epochLengthVal then
     epochL = #indices
   else
@@ -34,17 +29,15 @@ function val()
 
   cutorch.synchronize()
   for t,v in ipairs(indices) do
-    -- queue jobs to data-workers
     donkeys:addjob(
-      -- the job callback (runs in data-worker thread)
       function() --load single batches
         local inputs, labels, imNames = loadValBatch(v)
         return inputs, labels, imNames
       end,
-      -- the end callback (runs in the main thread)
+      -- test their performance in the main thread
       valBatch
     )
-    xlua.progress(t, epochL)
+    xlua.progress(t, epochL) -- print progress bar in terminal
     if t == opt.epochLengthVal then
       break
     end
@@ -54,8 +47,9 @@ function val()
   cutorch.synchronize()
 
   print('\n')
+  
+  -- calculate intersection over union final score for this epoch
   single_accuracy = torch.zeros(opt.numClasses)
-
   for i = 2, opt.numClasses+1 do
     label = confcounts[{i,{}}]:sum()
     result = confcounts[{{},i}]:sum()
@@ -64,7 +58,6 @@ function val()
   end
 
   loss_epoch = loss_epoch / epochL
-
   val_acc = single_accuracy:mean() 
   val_loss = loss_epoch
 
@@ -78,6 +71,7 @@ function val()
   end
   print('\n')
 
+  -- write information in logger files and update report.html
   accLogger:add{train_acc, val_acc}
   accLogger:style{'-','-'}
   accLogger:plot()
@@ -92,11 +86,11 @@ function val()
 end
 
 
--- GPU inputs (preallocate)
+-- preallocate GPU inputs
 local inputs = torch.CudaTensor()
 local labels = torch.CudaTensor()
 
-local tmp = 0
+local tmpErr = 0
 
 --local parameters, gradParameters = model:getParameters()
 
@@ -105,8 +99,6 @@ function valBatch(inputsCPU, labelsCPU, imNames)
   collectgarbage()
 
   -- transfer over to GPU
--- inputs = inputsCPU:cuda()
---  labels = labelsCPU:cuda()
   inputs = inputs or (opt.nGPU == 1 and torch.CudaTensor() or cutorch.createCudaHostTensor())
   labels = labels or torch.CudaTensor()
 
@@ -115,24 +107,24 @@ function valBatch(inputsCPU, labelsCPU, imNames)
 
   cutorch.synchronize()
 
+  -- send batch through network
   outputs = model:forward(inputs)
   err = criterion:forward(outputs, labels)
 
-  if err == err then
-
+  if err == err then -- if resulting err is NaN, keep old value 
   else
-    err = tmp
+    err = tmpErr
   end
-  tmp = err
+  tmpErr = err
 
   cutorch.synchronize()
 
   batchNumber = batchNumber + 1
   loss_epoch = loss_epoch + err
+  
+  -- initiliaze some values for accuracy calculation
   correct = torch.ones(opt.batchSizeVal, opt.targetSize, opt.targetSize)
   outLabel = opt.numClasses + 1
-  -- confcounts = torch.zeros(outLabel,outLabel)
-  --do
   _,prediction_sorted = outputs:float():sort(2, true) -- descending
   assert(prediction_sorted:max() < outLabel)
   tmpOut = prediction_sorted[{{},1,{},{}}]:float()
@@ -142,9 +134,10 @@ function valBatch(inputsCPU, labelsCPU, imNames)
 
   assert(prediction_sorted:size(3) == tmpLab:size(2) and prediction_sorted:size(4) == tmpLab:size(3))
   tmpOut = tmpOut:long()
-  locsToConsider = tmpLab:ne(outLabel)
+  locsToConsider = tmpLab:ne(outLabel) -- label 'outLabel' does not contribute to accuracy calculation
   locsToConsider = locsToConsider:byte()
 
+  -- calculate/update confusion matrix (confcounts)
   tmp = tmpLab:long()
   sumImg = tmp:add(tmpOut*outLabel) + 1
   tmpImg = sumImg:maskedSelect(locsToConsider)
@@ -152,24 +145,22 @@ function valBatch(inputsCPU, labelsCPU, imNames)
   hs = torch.histc(tmpImg, outLabel*outLabel+1, 1, outLabel*outLabel+1)
   confcounts = confcounts:add(torch.reshape(hs[{{1,outLabel*outLabel}}],outLabel,outLabel))
 
+  -- save some examples for the first batch (similar as in train.lua)
   if batchNumber == 1 then
     correct = correct:float()
     tmpOut = tmpOut:float()
     locsForCorrect = tmpLab:eq(tmpOut)
-    correct:maskedFill(locsForCorrect,1)--labelCopy)
+    correct:maskedFill(locsForCorrect,1)
 
     locsIrrelevant = tmpLab:eq(opt.numClasses + 1)
     correct:maskedFill(locsIrrelevant,1)
 
-    imgCount = opt.batchSizeVal < 16 and opt.batchSizeVal or 16 -- for pretty printing
+    imgCount = opt.batchSizeVal < 16 and opt.batchSizeVal or 16 -- save at most 16 examples
     for i = 1,imgCount do
-      --calculate back to original image (bgr->bgr and mean/std calculation)
+      --get back to original input image (bgr->bgr and mean/std calculation)
       img = inputsCPU[i]:index(1,torch.LongTensor{3,2,1})
       img = img / 255
       for i=1,3 do -- channels
-        --  if std then img[{{i},{},{}}]:mul(std[i]) 
-        --  else error('no std given')
-        --  end
         if mean then img[{{i},{},{}}]:add(mean[i]) 
         else error('no mean given')
         end 

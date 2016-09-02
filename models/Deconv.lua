@@ -3,34 +3,19 @@ require 'cudnn'
 require 'cunn'
 require 'cutorch'
 
-
-model = torch.load("models/ImageNetConv.t7")
-
---replace cudnn.relu with nn.relu
-reluLayer = {2,4,7,9,12,14,16,19,21,23,26,28,30,33,36}
-for k,v in pairs(reluLayer) do
-  model:remove(v)
-  model:insert(nn.ReLU(true),v)
-end
-
---[[ToDo:
-- add batchNormalization to the output of every convolutional/deconvolutional layer
-- remove dropout
-- pool -> unpool
-- deconv net
-]]--
-
+-- from: http://cvlab.postech.ac.kr/research/deconvnet/model/VGG_conv/VGG_ILSVRC_16_layers_conv.caffemodel
+-- and transformed using loadImageNetModel.lua
+model = torch.load("models/ImageNetConv.t7") 
 
 model:insert(nn.SpatialBatchNormalization(4096),33)
 model:insert(nn.SpatialBatchNormalization(4096),37)
 
+
+--remove last classification layers
 model:remove(35)
 model:remove()
 model:remove()
 model:remove()
-
-
---BatchNormalization after Linear Layer, last layer is Convolution not FullConvolution!!
 
 
 -- add BatchNormalization to existing network
@@ -133,9 +118,6 @@ for i = 1,2 do --deconv 1
 end
 
 model:add(cudnn.SpatialConvolution(64, 21, 1, 1))  --kein padding!! 
---model:add(cudnn.SpatialFullConvolution(64, 21, 1, 1))  --kein padding!! 
-
-
 
 local function ConvInit(name)
   for k,v in pairs(model:findModules(name)) do
@@ -152,33 +134,6 @@ local function BNInit(name)
   end
 end
 
---ConvInit('cudnn.SpatialConvolution')
 ConvInit('cudnn.SpatialFullConvolution')
 BNInit('nn.SpatialBatchNormalization')
 
---model:get(1).gradInput = nil  --?????????????????????????
-
-
---[[ Caffe definition of the last layers 
-
-layers { bottom: 'pool5' top: 'fc6' name: 'fc6' type: CONVOLUTION
-  blobs_lr: 1 blobs_lr: 2 weight_decay: 1 weight_decay: 0
-  convolution_param { engine: CAFFE kernel_size: 7 num_output: 4096 } }
-layers { bottom: 'fc6' top: 'fc6' name: 'relu6' type: RELU }
-layers { bottom: 'fc6' top: 'fc6' name: 'drop6' type: DROPOUT
-  dropout_param { dropout_ratio: 0.5 } }
-layers { bottom: 'fc6' top: 'fc7' name: 'fc7' type: CONVOLUTION
-  blobs_lr: 1 blobs_lr: 2 weight_decay: 1 weight_decay: 0
-  convolution_param { engine: CAFFE kernel_size: 1 num_output: 4096 } }
-layers { bottom: 'fc7' top: 'fc7' name: 'relu7' type: RELU }
-layers { bottom: 'fc7' top: 'fc7' name: 'drop7' type: DROPOUT
-  dropout_param { dropout_ratio: 0.5 } }
-layers { name: 'score-fr' type: CONVOLUTION bottom: 'fc7' top: 'score'
-  blobs_lr: 1 blobs_lr: 2 weight_decay: 1 weight_decay: 0
-  convolution_param { engine: CAFFE num_output: 21 kernel_size: 1 } }
-
-layers { type: DECONVOLUTION name: 'upsample' bottom: 'score' top: 'bigscore'
-  blobs_lr: 0 blobs_lr: 0
-  convolution_param { num_output: 21 kernel_size: 64 stride: 32 } }
-layers { type: CROP name: 'crop' bottom: 'bigscore' bottom: 'data' top: 'upscore' }
-]]--
