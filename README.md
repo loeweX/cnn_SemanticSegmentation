@@ -7,15 +7,15 @@
 
 2. Get [Torch](http://torch.ch/docs/getting-started.html)
 
-3. Install an additional packages with these command:
+3. Install an additional packages with these commands:
 
 	`luarocks install  torch`   
 	`luarocks install  image`   
 	`luarocks install  paths`   
-	`luarocks install  xlua` 
-	`luarocks install  optim`   
-	`luarocks install  nn`
-	`luarocks install  trepl`   
+	`luarocks install  xlua`   
+	`luarocks install  optim` 
+	`luarocks install  nn`   
+	`luarocks install  trepl` 
 	`luarocks install  cunn`   
 	`luarocks install  cudnn`   
 	`luarocks install  cutorch`   
