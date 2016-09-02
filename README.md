@@ -9,9 +9,9 @@
 
 3. Install an additional packages with these command:
 
-	`luarocks install  torch
-	`luarocks install  image
-	`luarocks install  paths
+	`luarocks install  torch`
+	`luarocks install  image`
+	`luarocks install  paths`
 	`luarocks install  xlua`   
 	`luarocks install  optim`
 	`luarocks install  nn`
