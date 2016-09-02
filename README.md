@@ -9,10 +9,14 @@
 
 3. Install an additional packages with these command:
 
-    `luarocks install  image`
+    	`luarocks install  image`
+
 	`luarocks install  torch`
+
 	`luarocks install  paths`
+
 	`luarocks install  xlua`
+
 	`luarocks install  optim`
 	`luarocks install  nn`
 	`luarocks install  xlua`   
@@ -23,7 +27,7 @@
 	`luarocks install  matio`   
 	`luarocks install  mattorch`   
 
-4. Download the network myModel.t7 and meanStd.t7 from: 
+4. Download the network myModel.t7, the datasets and their mean file (meanStd.t7) from: 
 
     ???
 
