@@ -2,7 +2,7 @@
 how to use for training:
 - adjust opts.lua to your needs
 - write a donkey to load your data (look at donkeyTemplate for help)
-]]--
+]]--  
 
 --load required packages
 require 'torch'
