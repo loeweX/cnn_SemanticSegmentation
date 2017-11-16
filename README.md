@@ -29,7 +29,7 @@
 
 ## How to use:
 
-1. adjust parameters on opts.lua to your needs
-
-2. run:
+1. run:
 		`th main.lua` 
+
+2. run 'th main.lua -h' to see available options.
