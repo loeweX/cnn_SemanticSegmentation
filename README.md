@@ -32,4 +32,4 @@
 1. run:
 		`th main.lua` 
 
-2. run 'th main.lua -h' to see available options.
+2. run `th main.lua -h` to see available options.
