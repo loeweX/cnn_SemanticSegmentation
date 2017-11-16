@@ -22,10 +22,6 @@
 	`luarocks install  matio`   
 	`luarocks install  mattorch`   
 
-4. Download the network myModel.t7, the datasets and their mean file (meanStd.t7) from: 
-
-    ???
-
 
 ## How to use:
 
